@@ -54,6 +54,7 @@ VGG_DOWNLOAD_LINK = 'http://www.vlfeat.org/matconvnet/models/imagenet-vgg-veryde
 VGG_MODEL = 'imagenet-vgg-verydeep-19.mat'
 EXPECTED_BYTES = 534904783
 
+
 def _create_content_loss(p, f):
     """ Calculate the loss between the feature representation of the
     content image and the generated image.
@@ -69,7 +70,7 @@ def _create_content_loss(p, f):
     """
     loss = tf.reduce_sum(tf.square(f-p))
     s = tf.reduce_prod(tf.shape(p))
-    norm_loss = loss/(4*s)
+    norm_loss = loss/(4.0*tf.to_float(s))
     return norm_loss
 
 
@@ -96,15 +97,19 @@ def _single_style_loss(a, g):
         2. we'll use the same coefficient for style loss as in the paper
         3. a and g are feature representation, not gram matrices
     """
+    '''
     M = tf.reduce_prod(tf.gather(tf.shape(a), [1, 2]))
     N = tf.gather(tf.shape(a), [3])
-
+    '''
+    shape = a.shape
+    M = shape[1]*shape[2]
+    N = shape[3]
     A = _gram_matrix(a, N, M)
     G = _gram_matrix(g, N, M)
 
     loss = tf.reduce_sum(tf.square(G - A))
-    norm = 4 * tf.square(N) * tf.square(M)
-
+    #norm = 4.0 * tf.to_float(tf.square(N)) * tf.to_float(tf.square(M))
+    norm = 4.0 * N**2 * M**2
     return loss/norm
 
 
@@ -134,6 +139,7 @@ def _create_losses(model, input_image, content_image, style_image):
 
     return content_loss, style_loss, total_loss
 
+
 def _create_summary(model):
     """ Create summary ops necessary
         Hint: don't forget to merge them
@@ -144,16 +150,17 @@ def _create_summary(model):
     summary_op = tf.summary.merge_all()
     return summary_op
 
-    pass
 
 def train(model, generated_image, initial_image):
     """ Train your model.
     Don't forget to create folders for checkpoints and outputs.
     """
     skip_step = 1
-    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
-
-    with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options)) as sess:
+    #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
+    #config=tf.ConfigProto(gpu_options=gpu_options) put in session(config)
+    config = tf.ConfigProto(log_device_placement=True)
+    config.gpu_options.allow_growth = True
+    with tf.Session(config=config) as sess:
         saver = tf.train.Saver()
         ###############################
         ## TO DO: 
@@ -170,6 +177,7 @@ def train(model, generated_image, initial_image):
         
         start_time = time.time()
         for index in range(initial_step, ITERS):
+            print('Iter: ', index)
             if index >= 5 and index < 20:
                 skip_step = 10
             elif index >= 20:
@@ -197,6 +205,7 @@ def train(model, generated_image, initial_image):
                 if (index + 1) % SAVE_EVERY == 0:
                     saver.save(sess, 'checkpoints/style_transfer', index)
 
+
 def main():
     with tf.variable_scope('input') as scope:
         # use variable instead of placeholder because we're training the intial image to make it
@@ -222,6 +231,7 @@ def main():
 
     initial_image = utils.generate_noise_image(content_image, IMAGE_HEIGHT, IMAGE_WIDTH, NOISE_RATIO)
     train(model, input_image, initial_image)
+
 
 if __name__ == '__main__':
     main()
