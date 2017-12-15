@@ -158,7 +158,7 @@ def train(model, generated_image, initial_image):
     skip_step = 1
     #gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
     #config=tf.ConfigProto(gpu_options=gpu_options) put in session(config)
-    config = tf.ConfigProto(log_device_placement=True)
+    config = tf.ConfigProto()
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         saver = tf.train.Saver()
@@ -168,7 +168,7 @@ def train(model, generated_image, initial_image):
         ## 2. create writer to write your graph
         ###############################
         sess.run(tf.global_variables_initializer())
-        writer = tf.summary.FileWriter(os.path.dirname('logs/log'))
+        writer = tf.summary.FileWriter(os.path.dirname('logs/log'), sess.graph)
         sess.run(generated_image.assign(initial_image))
         ckpt = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/checkpoint'))
         if ckpt and ckpt.model_checkpoint_path:
@@ -177,7 +177,6 @@ def train(model, generated_image, initial_image):
         
         start_time = time.time()
         for index in range(initial_step, ITERS):
-            print('Iter: ', index)
             if index >= 5 and index < 20:
                 skip_step = 10
             elif index >= 20:
@@ -189,8 +188,8 @@ def train(model, generated_image, initial_image):
                 ## TO DO: obtain generated image and loss
 
                 ###############################
-                total_loss = model['total_loss']
-                summary = model['summary_op']
+                total_loss = sess.run(model['total_loss'])
+                summary = sess.run(model['summary_op'])
                 gen_image = generated_image.eval()
                 gen_image = gen_image + MEAN_PIXELS
                 writer.add_summary(summary, global_step=index)
