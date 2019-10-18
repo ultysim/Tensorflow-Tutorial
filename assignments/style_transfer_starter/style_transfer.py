@@ -18,9 +18,11 @@ import tensorflow as tf
 import vgg_model
 import utils
 
+
+
 # parameters to manage experiments
-STYLE = 'guernica'
-CONTENT = 'deadpool'
+STYLE = 'three-musicians'
+CONTENT = 'card'
 STYLE_IMAGE = 'styles/' + STYLE + '.jpg'
 CONTENT_IMAGE = 'content/' + CONTENT + '.jpg'
 IMAGE_HEIGHT = 250
@@ -34,9 +36,9 @@ STYLE_LAYERS = ['conv1_1', 'conv2_1', 'conv3_1', 'conv4_1', 'conv5_1']
 W = [0.5, 1.0, 1.5, 3.0, 4.0] # give more weights to deeper layers.
 
 # Layer used for content features. You can change this.
-CONTENT_LAYER = 'conv4_2'
+CONTENT_LAYER = 'conv5_4'
 
-ITERS = 300
+ITERS = 140
 LR = 2.0
 
 SAVE_EVERY = 20
@@ -170,9 +172,10 @@ def train(model, generated_image, initial_image):
         sess.run(tf.global_variables_initializer())
         writer = tf.summary.FileWriter(os.path.dirname('logs/log'), sess.graph)
         sess.run(generated_image.assign(initial_image))
-        ckpt = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/checkpoint'))
-        if ckpt and ckpt.model_checkpoint_path:
-            saver.restore(sess, ckpt.model_checkpoint_path)
+        #No need for checkpoints
+        #ckpt = tf.train.get_checkpoint_state(os.path.dirname('checkpoints/checkpoint'))
+        #if ckpt and ckpt.model_checkpoint_path:
+        #    saver.restore(sess, ckpt.model_checkpoint_path)
         initial_step = model['global_step'].eval()
         
         start_time = time.time()
@@ -198,11 +201,12 @@ def train(model, generated_image, initial_image):
                 print('   Time: {}'.format(time.time() - start_time))
                 start_time = time.time()
 
-                filename = 'outputs/%d.png' % (index)
+                filename = 'outputs/%s_%s_%d.png' % (CONTENT, STYLE, index)
                 utils.save_image(filename, gen_image)
 
-                if (index + 1) % SAVE_EVERY == 0:
-                    saver.save(sess, 'checkpoints/style_transfer', index)
+                #No need for checkpoints
+                #if (index + 1) % SAVE_EVERY == 0:
+                #    saver.save(sess, 'checkpoints/style_transfer', index)
 
 
 def main():
@@ -230,6 +234,7 @@ def main():
 
     initial_image = utils.generate_noise_image(content_image, IMAGE_HEIGHT, IMAGE_WIDTH, NOISE_RATIO)
     train(model, input_image, initial_image)
+
 
 
 if __name__ == '__main__':
